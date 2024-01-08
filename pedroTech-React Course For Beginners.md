@@ -854,16 +854,269 @@ export const Home = () => {
   return <h1>This is home page and user is {username}.</h1>;
 };
 ```
-# React Query
+# React Query 
+### 介绍   
+React Query 是一个强大的数据获取库，它可以帮助你在 React 应用中获取、缓存和同步服务器状态。它提供了许多有用的特性，包括：
+- 数据获取：React Query 提供了 `useQuery` 钩子，你可以用它来获取数据。这个钩子会返回一个对象，包含数据、错误、加载状态等信息。
+- 数据突变：React Query 提供了 `useMutation` 钩子，你可以用它来执行创建、更新或删除操作。这个钩子会返回一个突变函数和突变状态。
+- 自动重试：如果数据获取或突变失败，React Query 会自动重试。
+- 背景更新：当你重新聚焦到应用或者网络重新连接时，React Query 会在后台更新数据。
+- 分页和无限加载：React Query 提供了 `usePaginatedQuery` 和 `useInfiniteQuery` 钩子，你可以用它们来实现分页和无限加载。
+- 依赖查询：你可以让一个查询依赖于另一个查询的结果。
+- 开箱即用的 Devtools：React Query 提供了一个开发者工具，你可以用它来查看和管理你的查询和突变。
+这只是 React Query 的一部分特性。如果你想了解更多，可以查看 [React Query 的文档](https://react-query.tanstack.com/)。
+- 遇到的问题: 组件名一定得首字母大写
+[掘金-React Query 入门教程！](https://juejin.cn/post/7195540736908394556)
+## 安装
+```
+npm i react-query
+```
+## 使用
+- app.js 中
+定义 client  和 QueryClientProvider 组件
+```jsx
+import { QueryClient, QueryClientProvider } from 'react-query';
+function App() {
+  const client = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false, //不要在窗口聚焦时重新获取数据
+      },
+    },
+  });
+  return (
+    <div className="App">
+      <QueryClientProvider client={client}>
+       <Router>
+        <Navbar />
+        <Routes>
+            <Route
+            path="/reactQuery"
+            element={<ReactQuery />}
+              />
+        </Routes>
+       </Router>
+      </QueryClientProvider>
+    </div>
+  )
+  }
+```
+- Home.js
+```jsx
+import Axios from 'axios';
+import { useQuery } from 'react-query';
 
+export const Home = () => {
+  const {
+    data: catData,
+    isLoading,//是否正在加载
+    isError,//是否错误
+    refetch,//重新获取数据
+  } = useQuery(['cat'], () => {
+    return Axios.get('https://catfact.ninja/fact').then((res) => res.data); //发起请求,获取API的值
+  });
+  if (isError) {
+    return <h1>error...</h1>;
+  }
+  if (isLoading) {
+    return <h1>loading...</h1>;
+  }
+  return (
+    <h1>
+      This is home page,
+      <p>{catData?.fact}</p> 
+      <button onClick={() => refetch()}>Update data</button>
+    </h1>
+  );
+};
+```
+**注意**:可选运算符的使用,{catData?.fact}避免 catData 属性为空或者本身为空的报错
 # React 中的表单
+```jsx
+npm install react-hook-form yup
+```
+## 为什么使用 react-hook-form ?
+[如何在 React 中优雅地处理表单？React Hook Form 的使用指南](https://juejin.cn/post/7208440329652650043)
+在 React 中，通常使用受控组件来处理表单。受控组件表单元素的值由 React 组件来管理，当表单数据发生变化时，React 会自动更新组件状态，并重新渲染组件。这种方式可以使得表单处理更加可靠和方便，也可以使得表单数据和应用状态之间保持一致。
+但在实际的开发中，表单往往是最复杂的场景，有的表单有数十个字段，如果使用受控组件去构建表单，那么我们就需要维护大量 state，且 React 又不像 Vue 可以通过双向绑定直接修改 state 的值，每一个表单字段还需要定义一下 onChange 方法。因此在维护复杂表单时，使用受控组件会有很大的额外代码量。
 
+为了解决受控组件带来的问题，我们可以使用非受控组件来构建表单。受控组件主要有以下三个优点:
+1. 可以减少组件的代码量和复杂度，因为非受控组件不需要在组件状态中保存表单数据。
+2. 可以更好地处理大量表单数据，因为非受控组件可以让您直接操作 DOM 元素，而不需要将所有表单数据存储在组件状态中。
+3. 可以更容易地与第三方 JavaScript 库和表单处理代码集成，因为非受控组件使您能够使用 DOM API 或 ref 直接访问表单元素，而不是在 React 中重新实现所有的表单处理逻辑。
+## React Hook Form
+##   Validation with Yup
+##   Resolvers
+##  Error Messages
+## 代码
+这段代码是一个使用 `react-hook-form` 和 `yup` 库创建的表单组件。下面是对代码的注释解释：
+
+```javascript
+// 定义一个名为 Formpage 的 React 组件
+export const Formpage = () => {
+  // 定义表单提交时的处理函数，这里只是简单地将表单数据打印到控制台
+  const onSubmit = (data) => console.log(data);
+
+  // 使用 yup 库定义表单验证规则
+  const schema = yup.object().shape({
+    username: yup.string().required('用户名不能为空'), // 用户名必须是字符串且不能为空
+    email: yup.string().email().required(), // 邮箱必须是有效的邮箱格式且不能为空
+    age: yup.number().positive().integer().required(), // 年龄必须是正整数且不能为空
+    password: yup.string().min(4).max(15).required(), // 密码必须是字符串，长度在4到15之间且不能为空
+    password_confirm: yup
+      .string()
+      .oneOf([yup.ref('password'), null], '两次密码不一致') // 确认密码必须与密码相同且不能为空
+      .required(),
+  });
+
+  // 使用 react-hook-form 的 useForm 钩子初始化表单
+  const {
+    register, // 用于注册输入字段
+    handleSubmit, // 用于处理表单提交
+    watch, // 用于观察输入字段的变化
+    formState: { errors }, // 包含表单验证错误的对象
+  } = useForm({
+    resolver: yupResolver(schema), // 使用 yupResolver 将 yup 验证规则与 react-hook-form 集成
+  });
+
+  // 返回表单的 JSX
+  return (
+    <div className="form">
+      <form onSubmit={handleSubmit(onSubmit)}>
+        {/* 下面是各个输入字段，使用 register 函数注册，并在需要的地方显示验证错误 */}
+        <input
+          type="text"
+          id="username"
+          placeholder="Enter username"
+          {...register('username', { required: true })}
+        />
+        <p>{errors.username?.message}</p>
+        {/* 省略其他输入字段... */}
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+  );
+};
+```
+
+这个组件会渲染一个包含用户名、邮箱、年龄、密码和确认密码输入字段的表单。表单提交时，会进行 yup 定义的验证，如果验证通过，会调用 `onSubmit` 函数处理表单数据。
 # 自定义 Hooks
+## useToggle
+在 React 中，你可以创建一个名为 `useToggle` 的自定义 Hook，用于切换一个布尔值。这个 Hook 可以用于控制按钮的显示和隐藏。以下是如何实现这个自定义 Hook：
 
+```javascript
+import { useState } from 'react';
+
+// 自定义 Hook，用于切换布尔值
+function useToggle(initialValue = false) {
+  // 使用 useState Hook 存储布尔值
+  const [value, setValue] = useState(initialValue);
+
+  // 定义切换函数
+  const toggleValue = () => setValue(!value);
+
+  // 返回当前值和切换函数
+  return [value, toggleValue];
+}
+```
+
+然后你可以在组件中使用这个自定义 Hook 来控制按钮的显示和隐藏：
+
+```javascript
+import useToggle from './useToggle'; // 假设 useToggle 在这个路径下
+
+function App() {
+  const [isButtonVisible, toggleButtonVisibility] = useToggle(true);
+
+  return (
+    <div className="App">
+      {isButtonVisible && <button>Click me</button>}
+      <button onClick={toggleButtonVisibility}>
+        {isButtonVisible ? 'Hide' : 'Show'} button
+      </button>
+    </div>
+  );
+}
+
+export default App;
+```
+
+在这个例子中，`useToggle` Hook 用于控制 `isButtonVisible` 状态。点击 "Hide button" 按钮会隐藏 "Click me" 按钮，点击 "Show button" 按钮会显示 "Click me" 按钮。
+## Hooks to abstract logic
+## 计数器 hook
+useCount.js
+```jsx
+import { useState } from 'react';
+
+// 自定义 Hook，用于实现计数器功能
+export const useCount = (initialValue = 0) => {
+  // 使用 useState Hook 存储计数值
+  const [count, setCount] = useState(initialValue);
+
+  // 定义增加、减少和重置计数值的函数
+  const increment = () => setCount(count + 1);
+  const decrement = () => setCount(count - 1);
+  const reset = () => setCount(initialValue);
+
+  // 返回当前计数值和操作函数
+  return { count, increment, decrement, reset };
+};
+export default useCount;
+```
+App.js
+```jsx
+import './App.css';
+import useCount from './hooks/useCount'; // 假设 useCount 在这个路径下
+
+function App() {
+  const { count, increment, decrement, reset } = useCount(0);
+
+  return (
+    <div className="App">
+      <h1>Count: {count}</h1>
+      <button onClick={increment}>Increment</button>
+      <button onClick={decrement}>Decrement</button>
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
+}
+
+export default App;
+
+```
 # TypeScript, 类型安全
-
+00:00 | Intro
+01:10 |  What is Type Safety?
+04:23 |  Prop Types in React
+04:29 |  Installing Prop Types Package
+08 :26 |  TypeScript in React
+## 08 :53 |  Creating a TypeScript React App
+```shell
+npx create-react-app . --template typescript
+```
+09:53 |  TypeScript File Structure
+12:21 |  Using TypeScript instead of Prop Types
+19:11 |  Defining States with Types in TypeScript
+21:59 |  enums in TypeScript
 # Redux Toolkit
+00:00 | Intro
+01:02 |  Project Introduction
+## 02 :02 |  Package Installation
+```js
+# Redux + 普通 JS 模版
+npx create-react-app my-app --template redux
 
+# Redux + TypeScript 模版
+npx create-react-app my-app --template redux-typescript
+```
+02:39 |  What is a Store?
+04:07 |  Store Configuration
+05:30 |  Provider in Redux
+07:01 |  Creating Reducers for the Store
+07:27 |  What is a Slice?
+08:52 |  Creating the Slice
+15:29 |  Configuring the Login Page
+24:22 | Typescript In Redux
 # Firebase 项目 (第 1 部分)
 
 # Firebase 项目 (第 2 部分)
