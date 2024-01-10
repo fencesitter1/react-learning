@@ -1,6 +1,6 @@
-
 ```toc
 ```
+
 
 # 介绍
 
@@ -677,6 +677,10 @@ export const Navbar = () => {
 };
 
 ```
+
+> [!warning] 路由组件名称大写
+> 
+路由组件一定需要大写
 ## 设定 Navlink 高亮样式
 1. app.css 中设定 activeclassname ,默认为.avtive,可以自己设置
 ```jsx
@@ -1099,9 +1103,20 @@ npx create-react-app . --template typescript
 19:11 |  Defining States with Types in TypeScript
 21:59 |  enums in TypeScript
 # Redux Toolkit
-00:00 | Intro
-01:02 |  Project Introduction
-## 02 :02 |  Package Installation
+## 00 :00 | Intro
+### 官网链接
+[Redux 中文官网](https://cn.redux.js.org/introduction/getting-started/)
+### 什么是 redux
+Redux 是 JavaScript 应用的状态容器，提供可预测的状态管理。
+
+可以帮助你开发出行为稳定可预测的、运行于不同的环境（客户端、服务器、原生应用）、易于测试的应用程序。不仅于此，它还提供超爽的开发体验，比如有一个与时间旅行调试器相结合的实时代码编辑。
+
+可以将 Redux 与 React 或其他视图库一起使用。它体小精悍（只有2kB，包括依赖），却有很强大的插件扩展生态。
+### 什么是 redux Toolkit
+Redux Toolkit 是我们官方推荐的编写 Redux 逻辑的方法。它围绕 Redux 核心，并包含我们认为对于构建 Redux 应用必不可少的软件包和功能。Redux Toolkit 建立在我们建议的最佳实践中，简化了大多数 Redux 任务，防止了常见错误，并使编写 Redux 应用程序更加容易。
+## Project Introduction
+##  Package Installation
+### 一键安装
 ```js
 # Redux + 普通 JS 模版
 npx create-react-app my-app --template redux
@@ -1109,14 +1124,243 @@ npx create-react-app my-app --template redux
 # Redux + TypeScript 模版
 npx create-react-app my-app --template redux-typescript
 ```
-02:39 |  What is a Store?
-04:07 |  Store Configuration
-05:30 |  Provider in Redux
-07:01 |  Creating Reducers for the Store
-07:27 |  What is a Slice?
-08:52 |  Creating the Slice
-15:29 |  Configuring the Login Page
-24:22 | Typescript In Redux
+### 只安装 react-redux
+```jsx
+npm install @reduxjs/toolkit react-redux
+```
+## What is a Store?
+在 React 中，"Store"是与状态管理库（如 Redux 或 MobX）相关的概念，而不是 React 本身的术语。Store 是一个对象，用于存储应用程序的状态，并根据分发给它的操作来管理和更新状态。
+
+在 Redux 中，通常只有一个 Store 来保存整个应用程序的状态，这个状态只能通过向 Store 分发操作来更新，然后使用 reducers 生成新的状态。
+
+在 MobX 中，Store 通常是一个可观察的对象或一组可观察的对象，可以直接通过操作来更新。
+
+需要注意的是，虽然 Redux 和 MobX 是 React 应用程序中常用的状态管理选择，但它们并不是 React 本身的一部分，React 具有自己的内置状态管理系统，如 useState 和 useReducer 钩子，以及 Context API 用于更复杂的状态管理。
+## Store Configuration
+1. 创建 `src/store.js` 或者自带 `app/store.js`
+```js
+import { configureStore } from '@reduxjs/toolkit';
+
+export const store = configureStore({
+  reducer: {},
+});
+```
+### reducer
+在编程中，Reducer 是一种特殊类型的函数，它接收两个参数：当前的状态和一个动作，然后基于这两个参数返回一个新的状态。
+Reducer 函数是纯函数，也就是说，对于相同的输入，它总是返回相同的输出，而且它不会改变原始状态或动作。
+在 Redux 中，Reducer 是用来更新存储在 Store 中的状态的关键机制。当一个动作被分发到 Store 时，这个动作会被传递给 Reducer 函数，Reducer 函数会根据动作的类型来决定如何更新状态，然后返回一个新的状态。
+
+##  Provider in Redux
+`Provider` 是 `react-redux` 库中的一个组件，它的作用是使 Redux store 能够在 React 组件树中的所有地方都可用。
+
+当你在应用的最顶层包裹 `Provider` 组件，并将 Redux store 作为 `Provider` 的 `store` 属性传递时，`Provider` 会将 Redux store 放入 context 中，这样 React 组件就可以通过 context 访问到 store。
+
+然后你就可以在任何子组件中使用 `react-redux` 的 `useSelector` 钩子来读取 Redux store 中的状态，或者使用 `useDispatch` 钩子来分发 action。
+
+这样做的好处是，你不需要显式地将 store 作为 prop 传递给每一个需要访问 store 的组件，而是可以在任何地方直接访问到。
+
+以下是一个基本的使用示例：
+```jsx
+import React from 'react';
+import { Provider } from 'react-redux';
+import { createStore } from 'redux';
+import rootReducer from './reducers';
+import MyComponent from './MyComponent';
+
+const store = createStore(rootReducer);
+
+function App() {
+  return (
+    <Provider store={store}>
+      <MyComponent />
+    </Provider>
+  );
+}
+
+export default App;
+```
+在这个示例中，`MyComponent` 组件和它的所有子组件都可以访问到 Redux store。
+### 没有 provider 报错
+- 报错
+	could not find react-redux context value; please ensure the component is wrapped in a at useReduxContext2 ( http://localhost:3000/static/js/bundle.js:65666:13 ) at useStore2
+##  Creating Reducers for the Store
+##   What is a Slice? && Creating the Slice
+在 Redux Toolkit 中，"slice" 是指应用状态的一部分，它通常对应于特定的功能或领域。每个 slice 都有一个对应的 reducer 和一组 action creators。
+
+Redux Toolkit 提供了一个名为 `createSlice` 的函数，它接收一个初始状态、一个对象，该对象的每个键都是一个 reducer 函数，以及一个 slice 名称。`createSlice` 会自动生成 action creators 和 action types，这些都是基于你提供的 reducer 函数和 slice 名称。
+
+以下是一个使用 `createSlice` 的例子：
+
+```javascript
+import { createSlice } from '@reduxjs/toolkit'
+
+const counterSlice = createSlice({
+  name: 'counter',
+  initialState: 0,
+  reducers: {
+    increment: state => state + 1,
+    decrement: state => state - 1
+  }
+})
+
+export const { increment, decrement } = counterSlice.actions
+
+export default counterSlice.reducer
+```
+
+在这个例子中，我们创建了一个名为 "counter" 的 slice，它有一个初始状态 `0`，以及两个 reducer 函数 `increment` 和 `decrement`。`createSlice` 返回一个对象，该对象包含生成的 action creators 和 reducer。
+## login logout slice
+这段代码是使用 Redux Toolkit 创建一个 Redux store 和一个名为 "user" 的 slice 的示例。下面是带有注释的代码：
+```javascript
+// 从 Redux Toolkit 导入 configureStore 和 createSlice 函数
+import { configureStore, createSlice } from '@reduxjs/toolkit';
+
+// 使用 createSlice 创建一个名为 "user" 的 slice
+const userSlice = createSlice({
+  name: 'user', // slice 的名称
+  initialState: { // slice 的初始状态
+    value: { username: '' },
+  },
+  reducers: { // 定义了两个 reducer 函数
+    // login reducer 接收当前的 state 和一个 action，然后将 state.value 设置为 action.payload
+    login(state, action) {
+      state.value = action.payload;
+    },
+    // logout reducer 接收当前的 state，然后将 state.value 设置为一个空的 username 对象
+    logout(state) {
+      state.value = { username: '' };
+    },
+  },
+});
+
+//导出 userSlice 的 action creators,这样我们就可以在其他地方使用这些函数来分发 actions
+export const { login, logout } = userSlice.actions;
+
+// 使用 configureStore 创建一个 Redux store，并将 userSlice.reducer 作为 reducer 传入
+// 这样，我们就可以在 store 中使用 userSlice 来管理 user 相关的状态
+export const store = configureStore({
+  reducer: {
+    user: userSlice.reducer,
+  },
+});
+```
+
+这段代码的**主要作用**是创建一个 Redux store，并定义了一个名为 "user" 的 slice，用于管理用户相关的状态。通过调用 `login` 和 `logout` 函数，我们可以分别更新用户的登录状态和注销状态。
+### redux store 结构
+上面代码定义了一个 Redux store，其结构如下：
+
+```javascript
+{
+  user: {
+    value: {
+      username: ''
+    }
+  }
+}
+```
+
+这个结构是由 `createSlice` 和 `configureStore` 函数确定的：
+
+- `createSlice` 函数创建了一个名为 `user` 的 slice。这个 slice 的初始状态是 `{ value: { username: '' } }`，并且它有两个 reducer：`login` 和 `logout`。
+
+- `configureStore` 函数创建了 Redux store，并设置了其 reducer。在这个例子中，store 只有一个 reducer，即 `user` slice 的 reducer。这意味着 `user` slice 的状态将被保存在 `state.user` 中。
+
+因此，整个 Redux store 的结构是 `{ user: { value: { username: '' } } }`。你可以通过 `state.user.value.username` 来访问 `username`。
+### active.payload
+在 Redux 中，一个 action 是一个包含 `type` 属性的普通 JavaScript 对象，用于描述发生了什么。除 `type` 属性外，action 对象可以包含其他属性来携带额外的信息，这些额外的信息通常放在 `payload` 属性中。
+
+在你的代码中，`action.payload` 是一个 action 对象的 `payload` 属性。当你调用 `login` action creator 并传入一个参数时，这个参数就会成为生成的 action 的 `payload`。例如，如果你这样调用 `login`：
+
+```javascript
+login({ username: 'John Doe' });
+```
+
+那么，生成的 action 就会是：
+
+```javascript
+{
+  type: 'user/login',
+  payload: { username: 'John Doe' }
+}
+```
+
+在 `login` reducer 中，`state.value` 被设置为 `action.payload`，也就是说，`state.value` 将被设置为你传给 `login` 的参数。
+##   Configuring the Login Page
+这是你的代码，我已经添加了注释来解释每一部分的功能：
+
+```javascript
+import React, { useState } from 'react';
+import { login, logout } from '../store'; // 导入 action creators
+import { useDispatch, useSelector } from 'react-redux'; // 导入 Redux hooks
+
+export const Login = () => {
+  const [newUsername, setnewUsername] = useState(''); // 创建一个状态来保存用户输入的新用户名
+  const dispatch = useDispatch(); // 获取 dispatch 函数
+
+  const handleLogin = () => {
+    dispatch(login({ username: newUsername })); // 当用户点击 "Submit Login" 按钮时，分发 login action
+  };
+
+  const username = useSelector((state) => state.user.value.username); // 从 Redux store 中获取当前的用户名
+
+  return (
+    <div className="app-container">
+      <h1>{username}</h1> {/* 显示当前的用户名 */}
+      <input
+        type="text"
+        onChange={(e) => {
+          setnewUsername(e.target.value); // 当用户在输入框中输入时，更新 newUsername 状态
+        }}
+      />
+
+      <button
+        type="submit"
+        onClick={handleLogin} // 当用户点击 "Submit Login" 按钮时，调用 handleLogin 函数
+      >
+        Submit Login
+      </button>
+      <button type="submit">Logout</button> {/* 这个按钮目前没有功能 */}
+    </div>
+  );
+};
+```
+
+这个组件的工作流程如下：
+
+1. 当组件首次渲染时，它会从 Redux store 中获取当前的用户名，并将其显示在 `<h1>` 元素中。
+
+2. 用户可以在 `<input>` 元素中输入新的用户名。当 `<input>` 元素的值改变时，`setnewUsername` 函数会被调用，将新的用户名保存到 `newUsername` 状态中。
+
+3. 用户可以点击 "Submit Login" 按钮来提交新的用户名。当按钮被点击时，`handleLogin` 函数会被调用。这个函数会分发 `login` action，并将新的用户名作为 action 的 payload。
+
+4. 当 `login` action 被分发时，对应的 reducer 会被调用，这个 reducer 会根据 action 的 payload 来更新 Redux store 中的用户名。
+
+5. 当 Redux store 更新时，`useSelector` Hook 会重新运行，从更新后的 store 中获取新的用户名。然后，React 会重新渲染组件，显示新的用户名。
+### 在其他页面使用参数username
+如果你需要在其他组件中使用 `username`，你可以使用 `useSelector` Hook 来从 Redux store 中获取它。这是因为 Redux store 是全局的，所以你可以在任何组件中访问它。
+
+例如，如果你有一个 `Profile` 组件，你可以像这样获取 `username`：
+
+```javascript
+import React from 'react';
+import { useSelector } from 'react-redux';
+
+export const Profile = () => {
+  const username = useSelector((state) => state.user.value.username); // 从store中获取username
+
+  return (
+    <div>
+      <h1>Profile Page</h1>
+      <p>Username: {username}</p>
+    </div>
+  );
+};
+```
+
+在这个例子中，我们使用 `useSelector` Hook 来从 Redux store 中获取 `username`，然后在 `<p>` 元素中显示它。
+
+请注意，这个代码假设你的 Redux store 的结构是 `{ user: { value: { username: '...' } } }`。如果你的 store 的结构不同，你需要相应地修改 `useSelector` 的参数。
+##  Typescript In Redux
 # Firebase 项目 (第 1 部分)
 
 # Firebase 项目 (第 2 部分)
