@@ -3,7 +3,6 @@
 
 
 # 介绍
-
 # React 基础
 ## 安装初始化
 1. 安装 npm,node.js
@@ -219,6 +218,7 @@ function App() {
 - 概念
 	**钩子**:钩子是仅在 React 渲染时可用的特殊功能（我们将在下一页详细介绍）。它们可以让您 "挂钩 "不同的 React 功能。
 ### ex1:按钮 onClick
+
 ```jsx
 import './App.css';
 import { useState } from 'react';
@@ -238,6 +238,7 @@ function App() {
 }
 ```
 ### ex2: 输入框+onChange
+
 ```jsx
 function App() {
   const [inputValue, setInputValue] = useState(0);
@@ -262,6 +263,7 @@ function App() {
 - 获取输入框的内容
 	依靠 event.target.value
 ### 按钮实现 show/hide
+
 ```jsx
 function App() {
   const [showText, setshowText] = useState(false);
@@ -535,11 +537,11 @@ function MyComponent() {
 ## 指定依赖项,跳过执行 Effect
 ```jsx
 useEffect(() => {
-  // 这里的代码会在每次渲染后执行 第一阶段+第二阶段
+  // 这里的代码会在每次渲染后运行，包括首次渲染和每次更新
 });
 
 useEffect(() => {
-  // 这里的代码只会在组件挂载后执行 第一阶段
+  // 这里的代码只会在组件挂载和卸载后执行 第一阶段+第三阶段
 }, []);//不会检测更新
 
 useEffect(() => {
@@ -630,6 +632,29 @@ export default App;
 	`setInfo(res.data);` 直接状态管理为对象
 2. 可选链`info?.name`
 	适用于对象属性可能为空,或者对象为空的情况
+## return 的作用
+在 `useEffect` 中，你可以选择返回一个函数。这个函数被称为清理函数，它的作用是在副作用函数下一次运行之前或组件卸载时执行一些清理操作。
+
+这对于需要清理的副作用（例如取消网络请求、清理定时器或取消订阅）非常有用。当你的副作用函数运行时，它可能会创建一些需要在下一次运行之前或组件卸载时清理的资源。
+
+例如，你可能会在副作用函数中订阅一些事件或启动一个定时器。当组件卸载时，你需要取消订阅或清理定时器，以防止内存泄漏或尝试更新已卸载的组件。
+
+下面是一个使用清理函数的 `useEffect` 示例：
+
+```typescript
+useEffect(() => {
+  const timerId = setInterval(() => {
+    console.log('This will run every second');
+  }, 1000);
+
+  // Here we return a cleanup function
+  return () => {
+    clearInterval(timerId); // This will clear the timer when the component unmounts or before the effect runs again
+  };
+}, []); // Empty dependency array means this effect runs once on mount and cleanup on unmount
+```
+
+在这个例子中，我们在副作用函数中启动了一个定时器，并在清理函数中清理了这个定时器。这样，当组件卸载时，定时器将被清理，防止了尝试更新已卸载的组件的错误。
 # React Router DOM
 ## 嵌套路由+link
 ```jsx
@@ -1362,7 +1387,341 @@ export const Profile = () => {
 请注意，这个代码假设你的 Redux store 的结构是 `{ user: { value: { username: '...' } } }`。如果你的 store 的结构不同，你需要相应地修改 `useSelector` 的参数。
 ##  Typescript In Redux
 # Firebase 项目 (第 1 部分)
+## Intro
+## Project Initialization
+1. 创建 react 项目
+```shell
+npx create-react-app . --template typescript
+```
+**注意**:文件名不可以有大写
+2. 删除部分文件,保留
+![image.png|500](https://cdn.jsdelivr.net/gh/fencesitter1/pictures/img/2024%2F01%2F11%2F20240111142132_14-21-32.png)
 
+## Installing packages
+```shell index.tsx
+npm install react-router-dom
+```
+## Creating Routes for the App
+1.app.js 中导入
+```tsx
+import { BrowserRouter as Router,Route,Routes } from 'react-router-dom';
+
+```
+2.创建 pages 文件夹
+```shell
+cd src
+mkdir pages
+```
+3.创建 pages/Home.tsx
+```tsx
+export const Home = () => {
+  return <div>Home Page</div>
+}
+```
+4.app.tsx 中导入并链接
+```tsx
+import React from 'react';
+import { BrowserRouter as Router,Route,Routes } from 'react-router-dom';//here
+import './App.css';
+import { Home } from './pages/Home';
+function App() {
+  return (
+    <div className="App">
+      <Router>
+        <Routes>
+          <Route path="/" element={<Home/>}></Route>{/* here */}
+        </Routes>
+      </Router>
+
+    </div>
+  );
+}
+export default App;
+```
+## Navbar Component
+- 步骤
+1.创建 src/components 文件夹
+2.创建 navbar.tsx 文件并编辑
+```tsx
+import { Link } from 'react-router-dom';
+
+export const Navbar = () => {
+  return (
+    <div>
+      <Link to="/">Home</Link>
+      <Link to="/login">Login</Link>
+    </div>
+  );
+};
+```
+3.在 app.tsx 中插入
+```tsx
+import { Navbar } from './components/navbar';
+
+function App() {
+  return (
+    <div className="App">
+      <Router>
+      <Navbar/>
+        <Routes>
+          <Route path="/" element={<Home />}></Route>
+          <Route path="/login" element={<Login />}></Route>
+        </Routes>
+      </Router>
+      
+    </div>
+  );
+}
+```
+### 注意: navbar 的位置问题
+在 React Router v6 中，所有的路由相关的组件（如 `<Route>`）必须是 `<Routes>` 组件的直接子组件。这意味着你不能在 `<Routes>` 和 `<Route>` 之间插入其他的组件，如 `<Navbar>`。
+
+在你的代码中，`<Navbar/>` 是 `<Router>` 的直接子组件，而不是 `<Routes>` 的子组件，所以它可以正常工作。如果你尝试将 `<Navbar/>` 放在其他位置，例如 `<Routes>` 和 `<Route>` 之间，你将会收到一个错误，因为这违反了 React Router 的规则。
+
+如果你希望 `<Navbar/>` 出现在所有页面上，你应该将它放在 `<Router>` 内部，但是在 `<Routes>` 外部，就像你现在的代码一样。这样，无论当前的路由是什么，`<Navbar/>` 都会被渲染。
+
+简单来说,navbar 是 Router 的直接子组件,而不是 Routes 的直接子组件
+
+## Setting up Firebase
+- 步骤
+1. [Firebase官网](https://firebase.google.com/)注册并按步创建项目
+2. 选择网页项目
+3. 添加 SDK 设置和配置
+	首先,安装 firebase
+	```shell
+	npm install firebase
+	```
+	其次,创建 src/config 文件夹
+	然后.创建 config/firebase.ts
+	最后,在 firebase.ts 中导入以下内容
+
+	```tsx
+	// Import the functions you need from the SDKs you need
+	import { initializeApp } from "firebase/app";
+	// TODO: Add SDKs for Firebase products that you want to use
+	// https://firebase.google.com/docs/web/setup#available-libraries
+	
+	// Your web app's Firebase configuration
+	const firebaseConfig = {
+	apiKey: "AIzaSyBlVKXm1LjmmAUo39h0sumWZ-68jNZDahw",
+	authDomain: "react-course-perdro.firebaseapp.com",
+	projectId: "react-course-perdro",
+	storageBucket: "react-course-perdro.appspot.com",
+	messagingSenderId: "333562392481",
+	appId: "1:333562392481:web:e0286453d6b991698065e0"
+	};
+	
+	// Initialize Firebase
+	const app = initializeApp(firebaseConfig);
+	```
+
+## Authentication using Firebase
+- 步骤
+1. 进入主页,身份验证和管理功能
+2. 选择谷歌登录
+3. 右上角启用,设置邮箱,保存
+4. firebase.ts 中添加 hooks,获取 auth 和 provider 参数
+5. 在 login.tsx 中导入参数和 signInWithPopup(使用弹出窗口登录)
+6. 创建 signInWithGoogle 变量 && button onclick [弹出窗口登录-signInWithPopup](#弹出窗口登录-signInWithPopup)
+7. 
+8. 登录后链接到主页 [路由重定向-useNavigate](#路由重定向-useNavigate)
+9. 导航栏的所有页面都显示用户名
+###  getAuth,GoogleAuthProvider
+- 概念
+`getAuth` 是 Firebase 提供的一个函数，用于获取 Firebase Authentication 服务的实例。这个实例可以用于调用各种身份验证方法，例如 `signInWithPopup`。
+
+`GoogleAuthProvider` 是 Firebase 提供的一个类，用于创建 Google 登录的提供者对象。这个对象可以用于 `signInWithPopup` 或 `signInWithRedirect` 方法，以启动 Google 登录流程。
+
+在 `signInWithPopup(auth,googleAuthProvider)` 这行代码中，`auth` 和 `googleAuthProvider` 被用于启动一个 Google 登录的弹出窗口。用户可以在这个窗口中通过 Google 账号进行登录，登录结果会被 `await` 捕获并存储在 `result` 中。
+
+-  `../config/firebase` 文件
+
+```typescript
+import { initializeApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
+
+// TODO: Replace the following with your app's Firebase project configuration
+const firebaseConfig = {
+  //...
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+
+export const auth = getAuth(app);
+export const googleAuthProvider = new GoogleAuthProvider();
+```
+
+在这个文件中，我们首先初始化 Firebase 应用，然后使用 `getAuth` 函数获取 `auth` 对象，并创建 `googleAuthProvider` 对象。这两个对象都被导出，所以它们可以在其他文件中使用。
+
+### 弹出窗口登录-signInWithPopup
+- 异步实行 async+await
+```tsx
+import {auth, googleAuthProvider} from '../config/firebase';
+import { signInWithPopup } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
+export const Login = () => {
+  const navigate = useNavigate();
+  const signInWithGoogle = async () => {
+    
+    const result = await signInWithPopup(auth, googleAuthProvider);
+    console.log(result);
+    navigate('/');
+  };
+  return <div>
+    <p>Sign In With Google To Continue</p>
+    <button onClick={signInWithGoogle}>Sign In With Google</button>
+    </div>;
+}
+```
+这里的异步操作是通过 `async/await` 关键字实现的。
+
+`async` 关键字用于声明一个函数是异步的，这意味着函数的执行不会阻塞后续代码的执行。异步函数总是返回一个 Promise，这个 Promise 在异步操作完成时解析。
+
+`await` 关键字用于等待一个 Promise 解析或拒绝。它只能在 `async` 函数内部使用。`await` 会暂停代码的执行，直到 Promise 解析，然后返回解析的值。
+- 代码实现流程
+
+	在你的代码中，`signInWithGoogle` 函数是异步的，因为它使用了 `async` 关键字。在这个函数内部，`signInWithPopup` 函数被调用，它返回一个 Promise。这个 Promise 在用户成功登录或登录失败时解析。
+	
+	`await` 关键字用于等待 `signInWithPopup` 的 Promise 解析。这意味着，直到用户完成登录（或登录失败），`console.log(result)` 之后的代码才会执行。
+	
+	这样做的好处是，你可以以同步的方式编写异步代码，使得代码更易读和理解。同时，由于 `await` 会暂停代码的执行，你可以在 Promise 解析后立即处理结果，而不需要使用 `.then()` 或 `.catch()` 方法。
+- 异步实现: .then+.catch
+```tsx
+import {auth, googleAuthProvider} from '../config/firebase';
+import { signInWithPopup } from 'firebase/auth';
+
+export const Login = () => {
+  const signInWithGoogle = () => {
+    signInWithPopup(auth, googleAuthProvider)
+      .then(result => {
+        console.log(result);
+      })
+      .catch(error => {
+        console.error(error);
+      });
+  };
+};
+```
+- signInWithGoogle
+
+signInWithGoogle 函数是异步的，这意味着它会立即返回一个 Promise，而不会阻塞其他代码的执行。当用户完成 Google 登录流程时，这个 Promise 将被解析，你可以在那时处理登录结果。
+### Promise
+- 概念
+Promise 是 JavaScript 中用于处理异步操作的一种对象。异步操作是指可能不会立即完成的操作，例如网络请求或定时器。
+Promise 是一个包含了异步操作结果的对象。你可以在 Promise 上注册回调函数来处理这个结果，无论它是成功还是失败。
+- Promise的三种状态
+1. Pending（待定）：初始状态，既不是成功，也不是失败状态。
+2. Fulfilled（已实现）：表示操作成功完成。
+3. Rejected（已拒绝）：表示操作失败。
+
+
+- 类比的例子
+你可以把 Promise 想象成一个餐厅的服务员。当你（代码）向服务员（Promise）下单（开始一个异步操作）时，服务员会去厨房（后台）准备你的食物（异步操作的结果）。在这个过程中，你可以继续做其他事情（执行其他代码），而不需要等待食物准备完成。当食物准备好了（异步操作完成），服务员会把食物带给你（解析 Promise）。如果厨房出了问题不能完成你的订单（异步操作失败），服务员也会通知你（拒绝 Promise）。
+
+这就是 Promise 的基本概念。它允许你在异步操作完成时或失败时执行特定的代码，而不需要立即等待这个操作的完成。
+### 路由重定向-useNavigate
+useNavigate 返回一个函数，你可以调用这个函数来导航到不同的路由。你可以传递一个路径字符串给这个函数，也可以传递一个描述目标位置的对象。
+- 登录完成之后返回主页
+```tsx
+import { useNavigate } from 'react-router-dom';
+export const Login = () => {
+  const navigate = useNavigate();
+  const signInWithGoogle = async () => {
+    
+    const result = await signInWithPopup(auth, googleAuthProvider);
+    console.log(result);
+    navigate('/');
+  };
+```
+### 导航栏显示用户名
+在 Firebase 中，你可以通过 `auth.currentUser` 获取当前登录的用户。这是一个 User 对象，包含了用户的各种信息，包括用户名。
+```tsx
+import { Link } from 'react-router-dom';
+import { auth } from "../config/firebase";
+
+export const Navbar = () => {
+  return (
+    <div>
+      <Link to="/">Home</Link>
+      <Link to="/login">Login</Link>
+      <p>{auth.currentUser?.displayName}</p>
+    </div>
+  );
+};
+```
+#### 问题:用户名显示不了
+在你的代码中,Navbar 组件在渲染时会立即尝试访问 auth.currentUser.displayName。然而，如果在这个时候用户还没有登录，那么 auth.currentUser 将是 null，并且 displayName 也将是 undefined。
+
+即使用户在之后登录了，Navbar 组件也不会知道这个变化，除非它被重新渲染。这是因为 auth.currentUser 不是 Navbar 组件的状态或属性，React 不会知道它何时发生变化。
+## 登录后显示用户信息(react-firebase-hooks)
+- 流程
+	- npm install react-firebase-hooks
+	- 使用 useAuthState 
+- 完整代码
+```tsx
+import { Link } from "react-router-dom";
+import { auth } from "../config/firebase";
+import { useAuthState } from "react-firebase-hooks/auth";
+
+export const Navbar = () => {
+  const [user] = useAuthState(auth);
+
+  const signUserOut = async () => {
+    await signOut(auth);
+  };
+  return (
+    <div className="navbar">
+      <div className="links">
+        <Link to="/"> Home </Link>
+        <Link to="/login"> Login </Link>
+      </div>
+      <div className="user">
+        {user && (
+          <>
+            <p> {user?.displayName} </p>
+            <img src={user?.photoURL || ""} width="20" height="20" />
+            <button onClick={signUserOut}> Log Out</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+```
+## 注销账号 Sign Out 
+- 完整代码
+```tsx
+import { Link } from "react-router-dom";
+import { auth } from "../config/firebase";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { signOut } from "firebase/auth";
+
+export const Navbar = () => {
+  const [user] = useAuthState(auth);
+
+  const signUserOut = async () => {
+    await signOut(auth);
+  };
+  return (
+    <div className="navbar">
+      <div className="links">
+        <Link to="/"> Home </Link>
+        <Link to="/login"> Login </Link>
+      </div>
+      <div className="user">
+        {user && (
+          <>
+            <p> {user?.displayName} </p>
+            <img src={user?.photoURL || ""} width="20" height="20" />
+            <button onClick={signUserOut}> Log Out</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+```
 # Firebase 项目 (第 2 部分)
 
 # Firebase 项目 (第 3 部分)
