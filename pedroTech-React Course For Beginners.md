@@ -960,7 +960,7 @@ export const Home = () => {
 };
 ```
 **注意**:可选运算符的使用,{catData?.fact}避免 catData 属性为空或者本身为空的报错
-# React 中的表单
+# React 中的表单 form
 ```jsx
 npm install react-hook-form yup
 ```
@@ -973,11 +973,87 @@ npm install react-hook-form yup
 1. 可以减少组件的代码量和复杂度，因为非受控组件不需要在组件状态中保存表单数据。
 2. 可以更好地处理大量表单数据，因为非受控组件可以让您直接操作 DOM 元素，而不需要将所有表单数据存储在组件状态中。
 3. 可以更容易地与第三方 JavaScript 库和表单处理代码集成，因为非受控组件使您能够使用 DOM API 或 ref 直接访问表单元素，而不是在 React 中重新实现所有的表单处理逻辑。
-## React Hook Form
+## useform
+`useForm` 是 React Hook Form 库中的一个自定义 Hook，它用于处理表单的状态。React Hook Form 是一个用于处理表单输入和验证的库，它使用 React Hooks API。
+
+当你在组件中调用 `useForm` 时，它会返回一个对象，这个对象包含了一些用于处理表单的方法和属性。
+
+以下是 `useForm` 的基本使用方法：
+
+```jsx
+import { useForm } from 'react-hook-form';
+
+function Form() {
+  const { register, handleSubmit, errors } = useForm();
+
+  const onSubmit = data => console.log(data);
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input name="example" defaultValue="test" {...register('example', { required: true })} />
+      <input type="submit" />
+    </form>
+  );
+}
+```
+
+在这个例子中，`useForm` 返回了三个方法：
+
+- `register`: 你可以使用这个函数来注册输入元素，这样 React Hook Form 就可以跟踪它们的值和验证状态。
+- `handleSubmit`: 这个函数用于处理表单的提交事件。它会自动调用 `event.preventDefault()` 来阻止表单的默认提交行为，然后调用你提供的回调函数，并将表单的数据作为参数传递给这个回调函数。
+- `errors`: 这个对象包含了表单中所有输入元素的验证错误。你可以使用它来显示错误消息。
+
+请注意，`useForm` 还有很多其他的方法和属性，你可以根据需要使用它们。
 ##   Validation with Yup
-##   Resolvers
+```tsx
+  // 使用 yup 库定义表单验证规则
+  const schema = yup.object().shape({
+    username: yup.string().required('用户名不能为空'), // 用户名必须是字符串且不能为空
+    email: yup.string().email().required(), // 邮箱必须是有效的邮箱格式且不能为空
+    age: yup.number().positive().integer().required(), // 年龄必须是正整数且不能为空
+    password: yup.string().min(4).max(15).required(), // 密码必须是字符串，长度在4到15之间且不能为空
+    password_confirm: yup
+      .string()
+      .oneOf([yup.ref('password'), null], '两次密码不一致') // 确认密码必须与密码相同且不能为空
+      .required(),
+  });
+```
+##  Resolvers
+`resolver: yupResolver(schema)` 是在使用 `react-hook-form` 库时，用于集成 Yup 验证库的代码。
+
+在这里，`yupResolver` 是一个函数，它接收一个 Yup 验证模式（`schema`）作为参数，并返回一个解析器（resolver）。这个解析器可以将 Yup 的验证功能集成到 `react-hook-form` 中。
+
+`react-hook-form` 的 `useForm` Hook 接收一个配置对象，其中的 `resolver` 属性用于指定一个解析器。当表单提交时，`react-hook-form` 会使用这个解析器来验证表单数据。
+
+所以，`resolver: yupResolver(schema)` 的作用就是让 `react-hook-form` 使用 Yup 来验证表单数据。
+
+这是一个使用 Yup 和 `react-hook-form` 的例子：
+
+```typescript
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+
+const schema = yup.object().shape({
+  name: yup.string().required(),
+  age: yup.number().positive().integer().required(),
+});
+
+function Form() {
+  const { register, handleSubmit, errors } = useForm({
+    resolver: yupResolver(schema)
+  });
+
+  // ...
+}
+```
+
+在这个例子中，`schema` 是一个 Yup 验证模式，它要求 `name` 是一个必填的字符串，`age` 是一个必填的正整数。`useForm` 使用 `yupResolver(schema)` 来验证这些规则。
 ##  Error Messages
-## 代码
+- schema 设置错误信息提示
+- 调用 useform 中的 `formState: {errors}` 
+- html 显示:`<p>{errors.username?.message}</p>`
+## useform+yup 库验证
 这段代码是一个使用 `react-hook-form` 和 `yup` 库创建的表单组件。下面是对代码的注释解释：
 
 ```javascript
@@ -1723,7 +1799,206 @@ export const Navbar = () => {
 };
 ```
 # Firebase 项目 (第 2 部分)
+## Firestore Database Configuration
+- 选择 firestore database
+![image.png|350](https://cdn.jsdelivr.net/gh/fencesitter1/pictures/img/2024%2F01%2F13%2F20240113141736_14-17-38.png)
+- 设置名称和位置
+- 以生产模式开始
 
+## Creating a collection
+- Start collection
+- 设置集合 ID:post,随机文档 ID
+- 添加字段
+	![image.png|500](https://cdn.jsdelivr.net/gh/fencesitter1/pictures/img/2024%2F01%2F13%2F20240113142658_14-26-59.png)
+
+## CreatePost Component
+- 创建 createpost 子路由
+- 创建 crateform.tsx
+## Package Installation
+- 安装 react-hook-form
+```shell
+npm install react-hook-form yup @hookform/resolvers
+```
+- import 
+```tsx
+
+```
+## Yup Validation && form 
+可以参考 [React 中的表单 form](#React%20中的表单%20form)
+- 使用 yup 定义匹配规则
+- 使用 useForm 
+### post form 代码
+```tsx
+import { useForm } from 'react-hook-form'
+import * as yup from 'yup'
+import { yupResolver } from '@hookform/resolvers/yup'
+interface CreateFormdata{
+  title: string;
+  description: string;
+}
+export const CreateForm = () => {
+  const schema = yup.object().shape({ 
+    title: yup.string().required("Title is required"),//匹配规则+错误提示
+    description: yup.string().required("Description is required")
+  });
+  const { register,
+    handleSubmit,
+    formState: { errors } } = useForm({
+    resolver: yupResolver(schema)
+  });
+  const onCreatePost = (data:CreateFormdata) => {
+    console.log(data);
+  };
+  return (
+    <div>
+      <form onSubmit={handleSubmit(onCreatePost)}>
+        <input type="text" placeholder="Title.." {...register('title', { required: true })} />
+        <p>{errors.title?.message}</p> //提示错误信息
+        <input type="text" placeholder="Description.." {...register('description', { required: true })} />
+        <p>{errors.description?.message}</p>
+        <input type='submit' />
+      </form>
+      </div>
+    )
+}
+```
+## Sending data to the database
+- firebase.ts 中导入 getFirestore
+- 定义 db 变量
+```tsx
+import { initializeApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: 'AIzaSyBlVKXm1LjmmAUo39h0sumWZ-68jNZDahw',
+  authDomain: 'react-course-perdro.firebaseapp.com',
+  projectId: 'react-course-perdro',
+  storageBucket: 'react-course-perdro.appspot.com',
+  messagingSenderId: '333562392481',
+  appId: '1:333562392481:web:e0286453d6b991698065e0',
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const googleAuthProvider = new GoogleAuthProvider();
+export const db = getFirestore(app);
+```
+### addDoc ,collection
+- create-form.tsx  中导入 {addDoc,collection} 
+- create-form.tsx  中导入 { db }
+- 定义 postref 集合
+- 异步实现 addDoc
+```tsx
+import {addDoc,collection} from "firebase/firestore"
+import { db } from '../../config/firebase';
+
+  const postsRef = collection(db, "posts");
+
+  const onCreatePost = async (data:CreateFormdata) => {
+    await addDoc(postsRef, {
+      title: data.title,
+      description: data.description,
+      //...data
+      username: user?.displayName,
+      id : user?.uid,
+    });
+  };
+```
+`addDoc` 和 `collection` 是 Firebase 库中的两个函数，它们用于操作 Firebase 中的 Cloud Firestore 数据库。
+
+1. `collection`: 这个函数用于获取一个 Firestore 集合的引用。在你的代码中，`collection(db, "posts")` 创建了一个指向 "posts" 集合的引用。`db` 是你的 Firestore 数据库实例。
+
+2. `addDoc`: 这个函数用于向一个 Firestore 集合中添加一个新的文档。在你的代码中，`addDoc(postsRef, { title: data.title, description: data.description })` 创建了一个新的文档，并将其添加到了 "posts" 集合中。这个新文档的数据是 `{ title: data.title, description: data.description }`。
+
+所以，`onCreatePost` 函数的作用是，当被调用时，它会创建一个新的 "post" 文档，并将其添加到 Firestore 数据库的 "posts" 集合中。这个新文档的 "title" 和 "description" 字段的值来自 `data` 参数。
+### 导入登录 user 变量
+```tsx
+import { auth, db } from '../../config/firebase';
+import { useAuthState } from 'react-firebase-hooks/auth';
+
+const [user] = useAuthState(auth);
+```
+### 数据库 crud 规则
+
+```js
+rules_version = '2'; // 使用版本 2 的 Firebase 安全规则语法
+
+service cloud.firestore { // 这个规则适用于 Firestore 服务
+  match /databases/{database}/documents { // 匹配所有数据库和文档
+    match /{document=**} { // ** 表示匹配任意数量的路径段，所以这里匹配所有文档
+      // 对于写入、删除和更新操作，只有当请求的用户已经认证，并且请求的用户的 ID 等于文档的 userId 字段时，才允许操作
+      allow write,delete,update: if request.auth != null && request.auth.uid ==request.resource.data.userId;
+      // 对于读取操作，只有当请求的用户已经认证时，才允许操作
+      allow read: if request.auth != null
+    }
+  }
+}
+```
+
+这些规则的目的是保护你的 Firestore 数据库。只有当用户已经认证，并且他们的 ID 等于他们想要操作的文档的 `userId` 字段时，才允许他们写入、删除或更新那个文档。对于读取操作，只有当用户已经认证时，才允许操作。
+## 提交表单数据后重定向
+- 定义 `navigate = useNavigate();`
+- 在 onCreatePost 中加入navigate
+```tsx
+import { useForm } from 'react-hook-form'
+import * as yup from 'yup'
+import { yupResolver } from '@hookform/resolvers/yup'
+import {addDoc,collection} from "firebase/firestore"
+import { auth } from '../../config/firebase';
+import {db} from "../../config/firebase"
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { useNavigate } from 'react-router-dom';
+
+interface CreateFormdata{
+  title: string;
+  description: string;
+}
+export const CreateForm = () => {
+  const [user] = useAuthState(auth);
+  
+  const navigate = useNavigate();
+  const schema = yup.object().shape({
+    title: yup.string().required("Title is required"),
+    description: yup.string().required("Description is required")
+  });
+  const { register,
+    handleSubmit,
+    formState: { errors } } = useForm<CreateFormdata>({
+    resolver: yupResolver(schema)
+    });
+  
+  const postsRef = collection(db, "posts");
+
+  const onCreatePost = async (data:CreateFormdata) => {
+    await addDoc(postsRef, {
+      title: data.title,
+      description: data.description,
+      //...data
+      username: user?.displayName,
+      userId : user?.uid,
+    });
+    navigate("/");
+  };
+  return (
+    <div>
+      <form onSubmit={handleSubmit(onCreatePost)}>
+        <input type="text" placeholder="Title.." {...register('title', { required: true })} />
+        <p>{errors.title?.message}</p>
+        <input type="text" placeholder="Description.." {...register('description', { required: true })} />
+        <p>{errors.description?.message}</p>
+        <input type='submit' />
+      </form>
+      </div>
+    )
+}
+```
 # Firebase 项目 (第 3 部分)
+
 
 # 部署 Firebase React 应用
