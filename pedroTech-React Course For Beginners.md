@@ -474,7 +474,7 @@ todoList.map((task) => {
    - 如果组件内部操作只涉及 React 内部的状态管理，没有与外部系统的交互，那么可能不需要使用 `useEffect`。
 4. **简化代码、提高性能：**
    - 移除不必要的 `useEffect` 有助于简化代码，提高代码的可读性，减少潜在的错误，同时也可能提高运行性能。
-总的来说，使用 `useEffect` 应该是有目的的，当组件需要进行副作用操作或者需要同步外部系统状态时才使用。在没有这样的需求时，避免不必要的 `useEffect` 可以保持代码的简洁性和可维护性。
+总的来说，使用 `useEffect` 应该是有目的的，当组件需要进行**副作用操作**或者需要**同步外部系统状态**时才使用。在没有这样的需求时，避免不必要的 `useEffect` 可以保持代码的简洁性和可维护性。
 ## 按钮实现文本框输入的显示+组件化
 ```jsx
 import React, { useState } from 'react';
@@ -558,6 +558,36 @@ useEffect(() => {
   }, []);
 ```
 这段代码包括第一阶段和第三阶段
+## 为什么需要 useEffect?&&副作用
+`useEffect` 是 React 中的一个 Hook，它允许你在函数组件中执行副作用操作。"副作用"是指那些不影响函数输出的操作，例如网络请求、订阅事件、手动修改 DOM 等。
+
+在 React 组件中，你可能需要在某些特定的时机执行这些副作用操作，例如：
+
+1. **组件挂载后**：这是一个常见的需求，例如，你可能需要在组件挂载后获取数据。在这种情况下，你可以使用 `useEffect`，并将依赖数组设置为空，这样副作用只会在组件挂载后运行一次。
+
+2. **组件更新后**：如果你的副作用依赖于组件的某些 props 或 state，你可能需要在这些 props 或 state 改变时重新运行副作用。在这种情况下，你可以使用 `useEffect`，并将这些 props 或 state 放入依赖数组。
+
+3. **组件卸载前**：你可能需要在组件卸载前执行一些清理操作，例如取消订阅事件。在这种情况下，你可以在 `useEffect` 的函数中返回一个函数，这个函数会在组件卸载前运行。
+
+在你的代码中，`getPosts` 函数是一个副作用，它获取数据并更新 state。你应该在组件挂载后运行这个副作用，所以你需要使用 `useEffect`：
+
+```typescript
+import { useEffect } from "react";
+
+// ...
+
+export const Home = () => {
+  // ...
+
+  useEffect(() => {
+    getPosts();
+  }, []); // 依赖数组为空，所以副作用只会在组件挂载后运行一次
+
+  // ...
+}
+```
+
+这样，`getPosts` 会在 `Home` 组件挂载后运行，获取数据并更新 `postList` state。
 # 从 API 获取数据
 ## fetch 
 ```jsx
@@ -1798,7 +1828,7 @@ export const Navbar = () => {
   );
 };
 ```
-# Firebase 项目 (第 2 部分)
+# Firebase 项目 (第 2 部分)CRUD
 ## Firestore Database Configuration
 - 选择 firestore database
 ![image.png|350](https://cdn.jsdelivr.net/gh/fencesitter1/pictures/img/2024%2F01%2F13%2F20240113141736_14-17-38.png)
@@ -1998,7 +2028,10 @@ export const CreateForm = () => {
     )
 }
 ```
-# Firebase 项目 (第 3 部分)
+# Firebase 项目 (第 3 部分) Like System
+## 展示帖子列表
+
+
 
 
 # 部署 Firebase React 应用
