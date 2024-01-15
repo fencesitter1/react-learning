@@ -2029,9 +2029,361 @@ export const CreateForm = () => {
 }
 ```
 # Firebase 项目 (第 3 部分) Like System
-## 展示帖子列表
+## 主页展示post
+```tsx
+// 引入 Firebase Firestore 的 collection 和 getDocs 方法
+import { collection, getDocs } from "firebase/firestore"
+// 引入 Firebase 配置
+import { db } from "../config/firebase"
+// 引入 React 的 useState 和 useEffect Hooks
+import { useState } from "react";
+import { useEffect } from "react";
+// 引入 Post 组件
+import { Post } from "../components/post";
 
+// 定义 Post 接口，描述 Post 对象的结构
+export interface Post{
+  id: string;
+  userId: string;
+  title: string;
+  username: string;
+  description: string;
+}
 
+// 定义 Home 组件
+export const Home = () => {
+  // 使用 useState Hook 创建 postList state，初始值为 null
+  const [postList, setPostList] = useState < Post[] | null>(null);
 
+  // 创建一个引用到 Firestore "posts" 集合的引用
+  const postRef = collection(db, "posts");
 
+  // 定义 getPosts 函数，用于获取 posts 集合的所有文档
+  const getPosts = async () => {
+    // 使用 getDocs 方法获取 posts 集合的所有文档
+    const data = await getDocs(postRef);
+    // 使用 setPostList 更新 postList state，将每个文档的数据和 id 映射到一个新的对象数组
+    setPostList(
+      data.docs.map((doc) => ({ ...doc.data(), id: doc.id }))as Post[]
+    )
+  }
+  
+  // 使用 useEffect Hook，在组件挂载后运行 getPosts 函数
+  useEffect(() => {
+    getPosts();
+  }, []); // 依赖数组为空，所以副作用只会在组件挂载后运行一次
+
+  // 渲染组件，如果 postList 不为 null，则遍历 postList 并为每个 post 渲染一个 Post 组件
+  return (
+    <div>
+    {postList?.map((post) => (
+      <Post  post={post}/>//props传参
+    ))}
+    </div>
+  )
+}
+```
+### 子组件 post 传参
+```tsx
+import { Post as IPost } from "../pages/Home";
+interface Props {
+  post: IPost;
+}
+
+export const Post = (props: Props) => {
+  const { post } = props;
+  return (
+    <div>
+      <div className="title">
+        <h1>{post.title}</h1>
+      </div>
+      <div className="body">
+        <p>{post.description}</p>
+      </div>
+      <div className="footer">
+        <p>{post.username}</p>
+      </div>
+    </div>
+  );
+}
+```
+
+## 点赞帖子
+### 创建 likes collections
+![image.png|500](https://cdn.jsdelivr.net/gh/fencesitter1/pictures/img/2024%2F01%2F14%2F20240114183151_18-31-51.png)
+### 点击按钮增加 like 数据 (addlikes)
+- 主要功能
+向 Firebase Firestore 数据库的 "likes" 集合中添加一个新的 "like" 文档，并更新本地状态 `likes`。
+
+- 实现逻辑和注释：
+
+```tsx
+  const { post } = props;
+  const [user] = useAuthState(auth);
+  const [likes, setLikes] = useState<Like[] | null>(null);
+// 创建一个引用到 Firestore 数据库中 "likes" 集合的引用
+const likesRef = collection(db, "likes");
+
+// 定义一个异步函数 addLike
+const addLike = async () => {
+  try {
+    // 使用 addDoc 函数向 "likes" 集合中添加一个新的文档
+    // 新文档的数据包括当前用户的 ID 和当前帖子的 ID
+    const newDoc = await addDoc(likesRef, { userId: user?.uid, postId: post.id });
+
+    // 更新 likes 状态
+    // 如果 likes 已经有值，那么将新的 "like" 添加到数组的末尾
+    // 如果 likes 为 null，那么设置 likes 为只包含新的 "like" 的数组
+    setLikes((prevLikes) =>
+      prevLikes ? [...prevLikes, { userId: user!.uid, id: newDoc.id }] : [{ userId: user!.uid, id: newDoc.id }]
+    );
+  } catch (err) {
+    // 如果在上述过程中发生错误，那么打印错误信息
+    console.log(err);
+  }
+};
+```
+
+- 主要工作流程是：
+1. 当用户点击 "like" 按钮时，调用 `addLike` 函数。
+2. `addLike` 函数首先尝试向 Firestore 数据库的 "likes" 集合中添加一个新的文档，该文档的数据包括当前用户的 ID 和当前帖子的 ID。
+3. 如果数据库操作成功，那么 `addDoc` 函数会返回一个包含新文档 ID 的对象。然后，这个新的 "like" 会被添加到 `likes` 状态中。
+4. 如果在这个过程中发生错误，那么错误信息会被打印到控制台。
+### 获取 likes 文档 (getlikes)
+- 主要功能
+是在组件挂载时，从 Firebase Firestore 数据库中获取所有与当前帖子相关的 "like" 文档，并更新本地状态 `likes`。
+
+- 实现逻辑和注释：
+
+```tsx
+// 创建一个查询，该查询将获取所有 postId 等于当前帖子 ID 的 "like" 文档
+const likesDoc = query(likesRef, where("postId", "==", post.id));
+
+// 定义一个异步函数 getLikes
+const getLikes = async () => {
+  // 使用 getDocs 函数获取 likesDoc 查询的所有文档
+  const data = await getDocs(likesDoc);
+
+  // 更新 likes 状态
+  // 将所有获取到的 "like" 文档转换为 Like 对象，然后设置为 likes 的新值
+  setLikes(data.docs.map((doc) => ({ userId: doc.data().userId, id: doc.id })));
+};
+
+// 使用 useEffect 钩子在组件挂载时调用 getLikes 函数
+// 这样可以在组件挂载时获取所有与当前帖子相关的 "like" 文档
+useEffect(() => {
+  getLikes();
+}, []);
+```
+
+- 主要工作流程是：
+1. 当组件挂载时，`useEffect` 钩子会调用 `getLikes` 函数。
+2. `getLikes` 函数首先尝试获取所有与当前帖子相关的 "like" 文档。
+3. 如果数据库操作成功，那么 `getDocs` 函数会返回一个包含所有匹配文档的对象。然后，这些文档会被转换为 Like 对象，并设置为 `likes` 状态的新值。
+4. 如果在这个过程中发生错误，那么错误信息会被打印到控制台。
+### 组件挂载后获取 likes 数据(useEffect)
+```tsx
+// 使用 useEffect 钩子在组件挂载时调用 getLikes 函数
+// 这样可以在组件挂载时获取所有与当前帖子相关的 "like" 文档
+useEffect(() => {
+  getLikes();
+}, []);
+```
+
+### 捕获和处理错误 (try ,catch)
+try 和 catch 是 JavaScript 的错误处理结构，用于捕获和处理在 try 块中可能发生的错误。
+### 删除点赞记录
+这段代码定义了一个异步函数 `removeLike`
+- 主要功能
+删除当前用户对当前帖子的 "like"，并更新本地状态 `likes`。
+
+- 实现逻辑和注释
+```tsx
+// 定义一个异步函数 removeLike
+const removeLike = async () => {
+  try {
+    // 创建一个查询，该查询将获取所有 userId 等于当前用户 ID 的 "like" 文档
+    const likeDeleteQuery = query(likesRef, where("userId", "==", user?.uid));
+
+    // 使用 getDocs 函数获取 likeDeleteQuery 查询的所有文档
+    const likeToDeleteData = await getDocs(likeDeleteQuery);
+
+    // 获取要删除的 "like" 文档的引用和 ID
+    const likeToDelete = doc(db, "likes", likeToDeleteData.docs[0].id);
+    const likeId = likeToDeleteData.docs[0].id;
+
+    // 删除 "like" 文档
+    await deleteDoc(likeToDelete);
+
+    // 更新 likes 状态
+    // 从 likes 中移除 ID 等于 likeId 的 Like 对象
+    setLikes((prevLikes) =>
+      prevLikes && prevLikes?.filter((like) => like.id !== likeId)
+    );
+  } catch (err) {
+    // 如果在这个过程中发生错误，那么错误信息会被打印到控制台
+    console.log(err);
+  }
+};
+```
+
+- 主要工作流程
+1. 当用户点击 "unlike" 按钮时，调用 `removeLike` 函数。
+2. `removeLike` 函数首先尝试获取所有 userId 等于当前用户 ID 的 "like" 文档。
+3. 如果数据库操作成功，那么 `getDocs` 函数会返回一个包含所有匹配文档的对象。然后，这些文档会被删除，并从 `likes` 状态中移除。
+4. 如果在这个过程中发生错误，那么错误信息会被打印到控制台。
+### 授权权限
+在删除 like 数据之前,首先需要授权数据库删除的权限.
+```python
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow write,delete,update: if request.auth != null && request.auth.uid ==request.resource.data.userId;
+      allow read,delete: if request.auth != null
+    }
+  }
+}
+```
+### 点赞状态的变化
+```tsx
+  return (
+    <div>
+      <div className="title">
+        <h1>{post.title}</h1>
+      </div>
+      <div className="body">
+        <p>{post.description}</p>
+      </div>
+      <div className="footer">
+        <p>{post.username}</p>
+        {/* 点赞按钮，如果用户已经点赞，那么点击按钮会取消点赞，否则会添加点赞 */}
+        <button onClick={hasUserLiked ? removeLike : addLike}>
+          {/* 如果用户已经点赞，那么显示一个 "thumbs down" 图标，否则显示一个 "thumbs up" 图标 */}
+          {hasUserLiked ? <>&#128078;</> : <>&#128077;</>}
+        </button>
+        {/* 显示点赞数量 */}
+        {likes && <p>likes:{likes?.length}</p>} 
+      </div>
+    </div>
+  );
+```
+### 疑惑:postId 的由来
+数据库中的字段只有四个,没有 id 的设置,主要是通过 
+`data.docs.map((doc) => ({ ...doc.data(), id: doc.id }))as Post[]`
+额外对每个 post 加上了特殊的 id
+```tsx
+export interface Post{
+  id: string;
+  userId: string;
+  title: string;
+  username: string;
+  description: string;
+}
+
+  const [postList, setPostList] = useState < Post[] | null>(null);
+
+  const postRef = collection(db, "posts");
+
+  const getPosts = async () => {
+
+    const data = await getDocs(postRef);
+    // 使用 setPostList 更新 postList state，将每个文档的数据和 id 映射到一个新的对象数组
+    setPostList(
+      data.docs.map((doc) => ({ ...doc.data(), id: doc.id }))as Post[]
+    )
+```
+### 整体代码
+```tsx
+// 导入所需的库和类型
+import { addDoc, collection,getDocs,query, where,deleteDoc, doc } from "firebase/firestore";
+import { auth, db } from "../config/firebase";
+import { Post as IPost } from "../pages/Home";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { useEffect, useState } from "react";
+
+// 定义 Props 和 Like 接口
+interface Props {
+  post: IPost;
+}
+interface Like{
+  id?:string;
+  userId: string;
+}
+
+// 定义 Post 组件
+export const Post = (props: Props) => {
+  const { post } = props;
+  const [user] = useAuthState(auth); // 获取当前用户
+  const [likes, setLikes] = useState<Like[] | null>(null); // 存储帖子的点赞
+  const likesRef = collection(db, "likes"); // 点赞的 Firestore 集合引用
+
+  // 查询帖子的点赞
+  const likesDoc = query(likesRef, where("postId", "==", post.id));
+
+  // 获取帖子的点赞
+  const getLikes = async () => {
+    const data = await getDocs(likesDoc);
+    setLikes(data.docs.map((doc) => ({userId: doc.data().userId,id: doc.id})));
+  };
+
+  // 添加点赞
+  const addLike = async () => {
+    try {
+      const newDoc= await addDoc(likesRef, { userId: user?.uid, postId: post.id });
+      setLikes((prevLikes) =>
+      prevLikes ? [...prevLikes, { userId: user!.uid ,id:newDoc.id}] : [{ userId: user!.uid ,id:newDoc.id}]
+      );
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // 移除点赞
+  const removeLike = async () => {
+    try {
+      const likeDelteQuery = query(likesRef, where("userId", "==", user?.uid));
+      const likeToDeleteData = await getDocs(likeDelteQuery);
+      const likeToDelete = doc(db, "likes", likeToDeleteData.docs[0].id);
+      await deleteDoc(likeToDelete);
+      setLikes((prevLikes) =>
+      prevLikes && prevLikes?.filter((like) => like.id !== likeToDeleteData.docs[0].id)
+      );
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // 检查用户是否已经点赞
+  const hasUserLiked = likes?.find((like) => like.userId === user?.uid);
+
+  // 在组件挂载时获取点赞
+  useEffect((() => {
+    getLikes();
+  }), []);
+
+  // 渲染组件
+  return (
+    <div>
+      <div className="title">
+        <h1>{post.title}</h1>
+      </div>
+      <div className="body">
+        <p>{post.description}</p>
+      </div>
+      <div className="footer">
+        <p>{post.username}</p>
+        {/* 点赞按钮，如果用户已经点赞，那么点击按钮会取消点赞，否则会添加点赞 */}
+        <button onClick={hasUserLiked ? removeLike : addLike}>
+          {/* 如果用户已经点赞，那么显示一个 "thumbs down" 图标，否则显示一个 "thumbs up" 图标 */}
+          {hasUserLiked ? <>&#128078;</> : <>&#128077;</>}
+        </button>
+        {/* 显示点赞数量 */}
+        {likes && <p>likes:{likes?.length}</p>} 
+      </div>
+    </div>
+  );
+}
+```
 # 部署 Firebase React 应用
